@@ -1,0 +1,279 @@
+enchant();
+
+
+// グローバル変数
+var game;
+var scene;
+var man;
+var cards = new Array();
+var cardsGroup = new Group();
+
+// 定数
+var SCREEN_WIDTH = 800;
+var SCREEN_HEIGHT = 480;
+var CARD_WIDTH = 60;
+var CARD_HEIGHT = 73;
+var CARD_NUM = 8;
+var MAN_WIDTH = 460;
+var MAN_HEIGHT = 257;
+
+var cardStatus = {
+    close: 0,
+    action: 1,
+    open: 2,
+}
+
+
+
+/********************************
+ クラス定義
+ ********************************/
+///
+/// 基本カードクラス
+///
+Card = Class.create(Sprite, {
+    // コンストラクタ
+    initialize: function(x, y) {
+        Sprite.call(this, CARD_WIDTH, CARD_HEIGHT);
+        this.image = game.assets['img/cards.png'];
+        this.x = x;
+        this.y = y;
+        this.frame = 0;
+        this.fps = 30;
+        this.status = cardStatus.close;
+        this.num = 0;
+    },
+
+    // カードめくる
+    cardopen: function() {
+        this.frame = this.num;
+        this.status = cardStatus.open;
+    },
+
+    // カード閉じる
+    cardclose: function() {
+    	this.frame = 0;
+        this.status = cardStatus.close;
+	},
+    
+    // タッチスタートイベント
+    ontouchstart: function(e) {
+        switch(this.status) {
+            case cardStatus.close:
+				flip(this);
+                this.visible = false;
+                man.actionFlg = true;
+                this.status = cardStatus.action;
+                break;
+            default:
+                break;
+        }
+    },
+    
+    // タッチエンドイベント
+    ontouchend: function(e) { 
+        this.visible = true;
+        man.actionFlg = false;
+
+        switch(this.status) {
+            case cardStatus.action:
+                this.cardopen();
+                break;
+            default:
+                break;
+        }
+    },
+    
+    // フレームイベント
+    onenterframe: function(e) {
+//        if (this.vibration)
+//        {
+//            if (game.frame % 2 == 0) {
+//                this.moveTo(this.x, this.y - 10);
+//            }
+//            else {
+//                this.moveTo(this.x, this.y + 10);
+//            }
+//        }
+    }
+});
+
+
+///
+/// 人クラス
+///
+Man = Class.create(Sprite, {
+    // コンストラクタ
+    initialize: function(x, y) {
+        Sprite.call(this, MAN_WIDTH, MAN_HEIGHT);
+        this.image = game.assets['img/esper00.png'];
+        this.fps = 15;
+        this.x = x;
+        this.y = y;
+        this.frame = 0;
+        this.actionFlg = false;
+    },
+
+    // フレームイベント
+    onenterframe: function(e) {
+//            console.log("現在のフレーム：" + (game.frame % 2));
+        if (this.actionFlg) {
+            /* アニメーションで人を動かす処理を書きます。 */
+            switch (game.frame % 4) {
+                case 0:
+                    this.image = game.assets['img/esper01.png'];
+                    break;
+                case 1:
+                    this.image = game.assets['img/esper02.png'];
+                    break;
+                case 2:
+                    this.image = game.assets['img/esper03.png'];
+                    break;
+                case 3:
+                    this.image = game.assets['img/esper04.png'];
+                    break;
+                default:
+                    this.image = game.assets['img/esper00.png'];
+                    break;
+            }
+        } else {
+            this.image = game.assets['img/esper00.png'];
+        }
+    }
+
+});
+
+
+///
+/// メータークラス
+///
+Meter = Class.create(Sprite, {
+    // コンストラクタ
+    initialize: function(x, y) {
+
+    },
+
+    // フレームイベント
+    onenterframe: function(e) {
+
+    }
+
+});
+    
+
+
+/********************************
+ メイン処理
+ ********************************/
+window.onload = function () {
+    //
+    game = new Game(SCREEN_WIDTH, SCREEN_HEIGHT);
+    scene = game.rootScene;
+
+    //
+    game.fps = 30;
+    game.preload('img/kabe.png'
+                 , 'img/table.png'
+                 , 'img/cards.png'
+                 , 'img/esper00.png'
+                 , 'img/esper01.png'
+                 , 'img/esper02.png'
+                 , 'img/esper03.png'
+                 , 'img/esper04.png'
+                );
+    game.onload = function () {
+        //
+        var bg1 = new Sprite(game.width, game.height);
+        var bg2 = new Sprite(game.width, game.height);
+        man = new Man(150, 50);
+
+        // 背景色と背景画像のセット
+        scene.backgroundColor = "lightgray";
+        bg1.image = game.assets['img/kabe.png'];
+        bg2.image = game.assets['img/table.png'];
+
+		// 画面表示（後から指定した方が上に重なる）
+        scene.addChild(bg1);
+        scene.addChild(man);
+        scene.addChild(bg2);
+
+        // カードの初期化
+        initCards();
+    }
+
+    game.start();
+};
+
+
+
+/********************************
+ 関数
+ ********************************/
+// カードの初期化
+function initCards() {
+	var num;
+    var index;
+    
+    // カード生成
+    for (var i = 0; i < CARD_NUM; i++) {
+        num = 1 + Math.floor(i / 2);
+        do {
+	       index = Math.floor(Math.random() * CARD_NUM);
+        } while(typeof cards[index] !== 'undefined');
+        cards[index] = new Card((CARD_WIDTH + 20) * index, 0);
+        cards[index].num = num;
+        cardsGroup.addChild(cards[index]);
+
+        //
+        console.log("i=" + i + "/num=" + cards[index].num + "/index=" + index);
+    }
+    cardsGroup.x = 80;
+    cardsGroup.y = 320;
+    scene.addChild(cardsGroup);
+};
+
+
+
+
+// めくる処理
+var currentNum;
+var openedCard;
+var correctNum = 0;
+
+function flip(card) {
+    if (typeof currentNum === 'undefined') {
+        // 1枚目
+        openedCard = card;
+        currentNum = card;
+    } else {
+        // 2枚目
+        judge(card);
+        currentNum = undefined;
+    }
+    card.cardopen;
+}
+
+
+//
+function judge(card) {
+    if (currentNum == card) {
+        // 正解処理
+    	correctNum++;
+        if (correctNum.num == CARD_NUM / 2) {
+            alert("your score is ..");
+        }
+    } else {
+        // 不正解処理
+        //カードを２枚とも元に戻す
+        card.cardclose;
+        console.log("カードを戻す処理はこれから");
+    }
+}
+
+
+
+
+// 乱数生成
+function rand(n) {
+    return Math.floor(Math.random() * (n + 1));
+}
