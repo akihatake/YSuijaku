@@ -3,3 +3,8 @@ body {
     padding: 0;
     margin: 0;
 }
+
+@font-face {
+    font-family: famiconfont;
+    src: url(path_to_webfontfile.ttf) format("truetype");
+}
